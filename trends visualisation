@@ -34,7 +34,7 @@ variables_utiles = [
 ]
 
 print(df.columns)
-df[["date", "Total_cas confirmés"]].head() # Only display valid columns for now
+df[["date", "Total_cas confirmés"]].head()
 plt.figure(figsize=(12,5))
 plt.plot(df["date"], df["Total_cas confirmés"], marker="o")
 plt.title("Évolution mensuelle des cas confirmés de paludisme (2022–2024)")
@@ -128,4 +128,106 @@ table_mensuelle = df.pivot_table(
     columns="Année"
 ).round(2)
 
-table_mensuelle
+
+from matplotlib.patches import Patch
+
+# 2. Dictionnaire saisons
+season_colors = {
+    "Forte": "#b6e3b6",       # vert clair
+    "Transition": "#fff3b0",  # jaune clair
+    "Faible": "#cfe2f3"       # bleu clair
+}
+
+# 3. Mois → Saison
+saison_par_mois = (
+    df.groupby("Mois_num")["Saison"]
+    .first()
+    .to_dict()
+)
+
+# 4. Fonction fond saisonnier
+def plot_saison_background(ax, saison_dict, season_colors):
+    for mois, saison in saison_dict.items():
+        ax.axvspan(
+            mois - 0.5,
+            mois + 0.5,
+            color=season_colors[saison],
+            alpha=0.5
+        )
+
+# 5. Légende des saisons
+season_legend = [
+    Patch(facecolor=season_colors["Forte"], edgecolor="black", label="Saison forte"),
+    Patch(facecolor=season_colors["Transition"], edgecolor="black", label="Saison de transition"),
+    Patch(facecolor=season_colors["Faible"], edgecolor="black", label="Saison faible")
+]
+
+
+# 6. GRAPHIQUE
+fig, ax = plt.subplots(figsize=(12,6))
+
+# Fond saisonnier
+plot_saison_background(ax, saison_par_mois, season_colors)
+
+# Courbes par année
+for annee in [2022, 2023, 2024]:
+    data_annee = df[df["Année"] == annee]
+    ax.plot(
+        data_annee["Mois_num"],
+        data_annee["Total_cas confirmés"],
+        marker="o",
+        label=str(annee)
+    )
+
+# Axes
+ax.set_xticks(range(1,13))
+ax.set_xticklabels(["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"])
+ax.set_xlabel("Mois")
+ax.set_ylabel("Nombre de cas confirmés")
+ax.set_title("Évolution mensuelle des cas confirmés de paludisme par saison (2022–2024)")
+ax.grid(True)
+
+# Légende années
+legend_annees = ax.legend(title="Année", loc="upper left")
+
+# Légende saisons
+ax.legend(handles=season_legend, title="Saisonnalité", loc="lower right")
+
+# Réafficher la légende années
+ax.add_artist(legend_annees)
+
+plt.show()
+
+fig, ax = plt.subplots(figsize=(12,6))
+
+# Fond saisonnier
+plot_saison_background(ax, saison_par_mois, season_colors)
+
+# Courbes par année
+for annee in [2022, 2023, 2024]:
+    data_annee = df[df["Année"] == annee]
+    ax.plot(
+        data_annee["Mois_num"],
+        data_annee["Prevalence_total"],
+        marker="o",
+        label=str(annee)
+    )
+
+# Axes
+ax.set_xticks(range(1,13))
+ax.set_xticklabels(["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"])
+ax.set_xlabel("Mois")
+ax.set_ylabel("Prevalence %")
+ax.set_title("Évolution mensuelle de la prevalence de paludisme par saison (2022–2024)")
+ax.grid(True)
+
+# Légende années
+legend_annees = ax.legend(title="Année", loc="upper left")
+
+# Légende saisons
+ax.legend(handles=season_legend, title="Saisonnalité", loc="upper right")
+
+# Réafficher la légende années
+ax.add_artist(legend_annees)
+
+plt.show()
