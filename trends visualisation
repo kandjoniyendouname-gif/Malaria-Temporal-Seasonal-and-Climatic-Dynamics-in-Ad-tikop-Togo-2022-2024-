@@ -1,0 +1,131 @@
+from google.colab import files
+uploaded = files.upload()
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+file_name = "Clean_data_for_M._ATTISSO 06 01 2026.xls"
+df = pd.read_excel(file_name)
+df.head()
+# Dictionnaire pour convertir les mois en chiffres
+mois_map = {
+    "Janvier": 1, "Février": 2, "Mars": 3, "Avril": 4,
+    "Mai": 5, "Juin": 6, "Juillet": 7, "Août": 8,
+    "Septembre": 9, "Octobre": 10, "Novembre": 11, "Décembre": 12
+}
+
+df["Mois_num"] = df["Mois"].map(mois_map)
+
+df["date"] = pd.to_datetime(
+    dict(year=df["Année"], month=df["Mois_num"], day=1)
+)
+
+df = df.sort_values("date")
+
+variables_utiles = [
+    "date",
+    "Total_cas confirmés",
+    "Prevalence_total",
+    "Cas_confirmés_<5ans",
+    "Cas_confirmés_>5ans_avec_FE",
+    "Prevalence_<5ans",
+    "Prevalence_>5ans_avec_FE"
+]
+
+print(df.columns)
+df[["date", "Total_cas confirmés"]].head() # Only display valid columns for now
+plt.figure(figsize=(12,5))
+plt.plot(df["date"], df["Total_cas confirmés"], marker="o")
+plt.title("Évolution mensuelle des cas confirmés de paludisme (2022–2024)")
+plt.xlabel("Date")
+plt.ylabel("Nombre de cas confirmés")
+plt.grid(True)
+plt.show()
+plt.figure(figsize=(12,5))
+plt.plot(df["date"], df["Prevalence_total"], marker="o", color="darkgreen")
+plt.title("Évolution mensuelle de la prévalence du paludisme (2022–2024)")
+plt.xlabel("Date")
+plt.ylabel("Prévalence (%)")
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(12,5))
+plt.plot(df["date"], df["Cas_confirmés_<5ans"], label="< 5 ans", marker="o")
+plt.plot(df["date"], df["Cas_confirmés_>5ans_avec_FE"], label="≥ 5 ans (incluant FE)", marker="o")
+
+plt.title("Évolution mensuelle des cas confirmés par groupe d’âge")
+plt.xlabel("Date")
+plt.ylabel("Nombre de cas confirmés")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(12,5))
+plt.plot(df["date"], df["Prevalence_<5ans"], label="< 5 ans", marker="o")
+plt.plot(df["date"], df["Prevalence_>5ans_avec_FE"], label="≥ 5 ans (incluant FE)", marker="o")
+
+plt.title("Évolution mensuelle de la prévalence par groupe d’âge")
+plt.xlabel("Date")
+plt.ylabel("Prévalence (%)")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+resume_annuel = df.groupby("Année").agg(
+    cas_confirmes_moy=("Total_cas confirmés", "mean"),
+    prevalence_moy=("Prevalence_total", "mean"),
+    prevalence_min=("Prevalence_total", "min"),
+    prevalence_max=("Prevalence_total", "max")
+).round(2)
+
+resume_annuel
+
+plt.figure(figsize=(12,6))
+
+for annee in [2022, 2023, 2024]:
+    data_annee = df[df["Année"] == annee]
+    plt.plot(
+        data_annee["Mois_num"],
+        data_annee["Total_cas confirmés"],
+        marker="o",
+        label=str(annee)
+    )
+
+plt.xticks(range(1,13),
+           ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"])
+
+plt.xlabel("Mois")
+plt.ylabel("Nombre de cas confirmés")
+plt.title("Évolution mensuelle des cas confirmés de paludisme (2022–2024)")
+plt.legend(title="Année")
+plt.grid(True)
+plt.show()
+plt.figure(figsize=(12,6))
+
+for annee in [2022, 2023, 2024]:
+    data_annee = df[df["Année"] == annee]
+    plt.plot(
+        data_annee["Mois_num"],
+        data_annee["Prevalence_total"],
+        marker="o",
+        label=str(annee)
+    )
+
+plt.xticks(range(1,13),
+           ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"])
+
+plt.xlabel("Mois")
+plt.ylabel("Prévalence (%)")
+plt.title("Évolution mensuelle de la prévalence du paludisme (2022–2024)")
+plt.legend(title="Année")
+plt.grid(True)
+plt.show()
+
+table_mensuelle = df.pivot_table(
+    values=["Total_cas confirmés", "Prevalence_total"],
+    index="Mois_num",
+    columns="Année"
+).round(2)
+
+table_mensuelle
