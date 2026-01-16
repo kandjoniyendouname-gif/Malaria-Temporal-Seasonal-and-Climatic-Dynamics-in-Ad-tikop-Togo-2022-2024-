@@ -1,0 +1,874 @@
+from google.colab import files
+uploaded = files.upload()
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+file_name = "Clean_data_for_M._ATTISSO 06 01 2026.xls"
+df = pd.read_excel(file_name)
+df.head()
+# Dictionnaire pour convertir les mois en chiffres
+mois_map = {
+    "Janvier": 1, "Février": 2, "Mars": 3, "Avril": 4,
+    "Mai": 5, "Juin": 6, "Juillet": 7, "Août": 8,
+    "Septembre": 9, "Octobre": 10, "Novembre": 11, "Décembre": 12
+}
+
+df["Mois_num"] = df["Mois"].map(mois_map)
+
+df["date"] = pd.to_datetime(
+    dict(year=df["Année"], month=df["Mois_num"], day=1)
+)
+
+df = df.sort_values("date")
+
+variables_utiles = [
+    "date",
+    "Total_cas confirmés",
+    "Prevalence_total",
+    "Cas_confirmés_<5ans",
+    "Cas_confirmés_>5ans_avec_FE",
+    "Prevalence_<5ans",
+    "Prevalence_>5ans_avec_FE"
+]
+
+print(df.columns)
+df[["date", "Total_cas confirmés"]].head()
+plt.figure(figsize=(12,5))
+plt.plot(df["date"], df["Total_cas confirmés"], marker="o")
+plt.title("Évolution mensuelle des cas confirmés de paludisme (2022–2024)")
+plt.xlabel("Date")
+plt.ylabel("Nombre de cas confirmés")
+plt.grid(True)
+plt.show()
+plt.figure(figsize=(12,5))
+plt.plot(df["date"], df["Prevalence_total"], marker="o", color="darkgreen")
+plt.title("Évolution mensuelle de la prévalence du paludisme (2022–2024)")
+plt.xlabel("Date")
+plt.ylabel("Prévalence (%)")
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(12,6))
+# Courbes stratifiées par âge
+plt.plot(df["date"], df["Cas_confirmés_<5ans"],
+         label="< 5 ans", marker="o")
+plt.plot(df["date"], df["Cas_confirmés_>5ans_avec_FE"],
+         label="≥ 5 ans (incluant FE)", marker="o")
+
+# Ajouter des lignes verticales à la fin de chaque année
+for year in df["Année"].unique():
+    dec_date = df[(df["Année"] == year) & (df["Mois"] == "Décembre")]["date"]
+    if not dec_date.empty:
+        plt.axvline(x=dec_date.values[0],
+                    linestyle="--",
+                    linewidth=1.5,
+                    alpha=0.7)
+
+plt.title("Évolution mensuelle des cas confirmés par groupe d’âge et par anneé")
+plt.xlabel("Date")
+plt.ylabel("Nombre de cas confirmés")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(12,6))
+
+# Courbes de prévalence stratifiées par âge
+plt.plot(df["date"], df["Prevalence_<5ans"],
+         label="< 5 ans", marker="o")
+plt.plot(df["date"], df["Prevalence_>5ans_avec_FE"],
+         label="≥ 5 ans (incluant FE)", marker="o")
+
+# Lignes verticales fin d’année
+for year in df["Année"].unique():
+    dec_date = df[(df["Année"] == year) & (df["Mois"] == "Décembre")]["date"]
+    if not dec_date.empty:
+        plt.axvline(x=dec_date.values[0],
+                    linestyle="--",
+                    linewidth=1.5,
+                    alpha=0.7)
+
+plt.title("Évolution mensuelle de la prévalence du paludisme par groupe d’âge et par anneé")
+plt.xlabel("Date")
+plt.ylabel("Prévalence (%)")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+
+plt.figure(figsize=(12,6))
+
+for annee in [2022, 2023, 2024]:
+    data_annee = df[df["Année"] == annee]
+    plt.plot(
+        data_annee["Mois_num"],
+        data_annee["Total_cas confirmés"],
+        marker="o",
+        label=str(annee)
+    )
+
+plt.xticks(range(1,13),
+           ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"])
+
+plt.xlabel("Mois")
+plt.ylabel("Nombre de cas confirmés")
+plt.title("Évolution mensuelle des cas confirmés de paludisme (2022–2024)")
+plt.legend(title="Année")
+plt.grid(True)
+plt.show()
+
+fig, ax = plt.subplots(figsize=(12,6))
+for annee in [2022, 2023, 2024]:
+    data_annee = df[df["Année"] == annee]
+    ax.plot(
+        data_annee["Mois_num"],
+        data_annee["Prevalence_total"],
+        marker="o",
+        label=str(annee)
+    )
+
+plt.xticks(range(1,13),
+           ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"])
+
+plt.xlabel("Mois")
+plt.ylabel("Prévalence (%)")
+plt.title("Évolution mensuelle de la prévalence du paludisme (2022–2024)")
+plt.legend(title="Année")
+plt.grid(True)
+plt.show()
+
+table_mensuelle = df.pivot_table(
+    values=["Total_cas confirmés", "Prevalence_total"],
+    index="Mois_num",
+    columns="Année"
+).round(2)
+
+
+from matplotlib.patches import Patch
+
+# 2. Dictionnaire saisons
+season_colors = {
+    "Forte": "#e06666",      # rouge moyen
+    "Transition": "#ffd966", # jaune moyen
+    "Faible": "#93c47d"      # vert moyen
+}
+
+# 3. Mois → Saison
+saison_par_mois = (
+    df.groupby("Mois_num")["Saison"]
+    .first()
+    .to_dict()
+)
+
+# 4. Fonction fond saisonnier
+def plot_saison_background(ax, saison_dict, season_colors):
+    for mois, saison in saison_dict.items():
+        ax.axvspan(
+            mois - 0.5,
+            mois + 0.5,
+            color=season_colors[saison],
+            alpha=0.5
+        )
+
+# 5. Légende des saisons
+season_legend = [
+    Patch(facecolor=season_colors["Forte"], edgecolor="black", label="Saison forte"),
+    Patch(facecolor=season_colors["Transition"], edgecolor="black", label="Saison de transition"),
+    Patch(facecolor=season_colors["Faible"], edgecolor="black", label="Saison faible")
+]
+# 6. GRAPHIQUE
+fig, ax = plt.subplots(figsize=(12,6))
+
+# Fond saisonnier
+plot_saison_background(ax, saison_par_mois, season_colors)
+
+# Courbes par année
+for annee in [2022, 2023, 2024]:
+    data_annee = df[df["Année"] == annee]
+    ax.plot(
+        data_annee["Mois_num"],
+        data_annee["Total_cas confirmés"],
+        marker="o",
+        label=str(annee)
+    )
+
+# Axes
+ax.set_xticks(range(1,13))
+ax.set_xticklabels(["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"])
+ax.set_xlabel("Mois")
+ax.set_ylabel("Nombre de cas confirmés")
+ax.set_title("Évolution mensuelle des cas confirmés de paludisme par saison (2022–2024)")
+ax.grid(True)
+
+# Légende années
+legend_annees = ax.legend(title="Année", loc="upper left")
+
+# Légende saisons
+ax.legend(handles=season_legend, title="Saisonnalité", loc="lower right")
+
+# Réafficher la légende années
+ax.add_artist(legend_annees)
+plt.savefig(
+    "Figure_1_Tendance_des_Cas_confirmes_Adetikope_2022_2024.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+plt.show()
+
+fig, ax = plt.subplots(figsize=(12,6))
+
+# Fond saisonnier
+plot_saison_background(ax, saison_par_mois, season_colors)
+
+# Courbes par année
+for annee in [2022, 2023, 2024]:
+    data_annee = df[df["Année"] == annee]
+    ax.plot(
+        data_annee["Mois_num"],
+        data_annee["Prevalence_total"],
+        marker="o",
+        label=str(annee)
+    )
+
+# Axes
+ax.set_xticks(range(1,13))
+ax.set_xticklabels(["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"])
+ax.set_xlabel("Mois")
+ax.set_ylabel("Prevalence %")
+ax.set_title("Évolution mensuelle de la prevalence de paludisme par saison (2022–2024)")
+ax.grid(True)
+
+# Légende années
+legend_annees = ax.legend(title="Année", loc="upper left")
+
+# Légende saisons
+ax.legend(handles=season_legend, title="Saisonnalité", loc="upper right")
+
+# Réafficher la légende années
+ax.add_artist(legend_annees)
+plt.savefig(
+    "Figure_1_Tendance_de_la_prevalence_du_paludisme_Adetikope_2022_2024.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+plt.show()
+
+table_par_annee = (
+    df.groupby("Année")
+    .agg(
+        # TOTAL population générale
+        cas_moy_mensuel_total_mean = ("Total_cas confirmés", "mean"),
+        cas_moy_mensuel_total_median = ("Total_cas confirmés", "median"),
+        cas_moy_mensuel_total_std = ("Total_cas confirmés", "std"),
+
+        prev_moy_mensuelle_total_mean = ("Prevalence_total", "mean"),
+        prev_moy_mensuelle_total_median = ("Prevalence_total", "median"),
+        prev_moy_mensuelle_total_std = ("Prevalence_total", "std"),
+
+        #  Moins de 5 ans 
+        cas_moy_mensuel_moins5_mean = ("Cas_confirmés_<5ans", "mean"),
+        cas_moy_mensuel_moins5_median = ("Cas_confirmés_<5ans", "median"),
+        cas_moy_mensuel_moins5_std = ("Cas_confirmés_<5ans", "std"),
+
+        prev_moy_mensuelle_moins5_mean = ("Prevalence_<5ans", "mean"),
+        prev_moy_mensuelle_moins5_median = ("Prevalence_<5ans", "median"),
+        prev_moy_mensuelle_moins5_std = ("Prevalence_<5ans", "std"),
+
+        # 5 ans et plus (FE incluses) 
+        cas_moy_mensuel_plus5_mean = ("Cas_confirmés_>5ans_avec_FE", "mean"),
+        cas_moy_mensuel_plus5_median = ("Cas_confirmés_>5ans_avec_FE", "median"),
+        cas_moy_mensuel_plus5_std = ("Cas_confirmés_>5ans_avec_FE", "std"),
+
+        prev_moy_mensuelle_plus5_mean = ("Prevalence_>5ans_avec_FE", "mean"),
+        prev_moy_mensuelle_plus5_median = ("Prevalence_>5ans_avec_FE", "median"),
+        prev_moy_mensuelle_plus5_std = ("Prevalence_>5ans_avec_FE", "std")
+    )
+    .round(2)
+)
+
+table_par_annee
+
+# Tableau descriptif par saison de transmission et groupe d’âge
+table_par_saison = (
+    df.groupby("Saison")
+    .agg(
+        # TOTAL population générale 
+        cas_moy_mensuel_total_mean = ("Total_cas confirmés", "mean"),
+        cas_moy_mensuel_total_median = ("Total_cas confirmés", "median"),
+        cas_moy_mensuel_total_std = ("Total_cas confirmés", "std"),
+
+        prev_moy_mensuelle_total_mean = ("Prevalence_total", "mean"),
+        prev_moy_mensuelle_total_median = ("Prevalence_total", "median"),
+        prev_moy_mensuelle_total_std = ("Prevalence_total", "std"),
+
+        # Moins de 5 ans 
+        cas_moy_mensuel_moins5_mean = ("Cas_confirmés_<5ans", "mean"),
+        cas_moy_mensuel_moins5_median = ("Cas_confirmés_<5ans", "median"),
+        cas_moy_mensuel_moins5_std = ("Cas_confirmés_<5ans", "std"),
+
+        prev_moy_mensuelle_moins5_mean = ("Prevalence_<5ans", "mean"),
+        prev_moy_mensuelle_moins5_median = ("Prevalence_<5ans", "median"),
+        prev_moy_mensuelle_moins5_std = ("Prevalence_<5ans", "std"),
+
+        # 5 ans et plus (FE incluses)
+        cas_moy_mensuel_plus5_mean = ("Cas_confirmés_>5ans_avec_FE", "mean"),
+        cas_moy_mensuel_plus5_median = ("Cas_confirmés_>5ans_avec_FE", "median"),
+        cas_moy_mensuel_plus5_std = ("Cas_confirmés_>5ans_avec_FE", "std"),
+
+        prev_moy_mensuelle_plus5_mean = ("Prevalence_>5ans_avec_FE", "mean"),
+        prev_moy_mensuelle_plus5_median = ("Prevalence_>5ans_avec_FE", "median"),
+        prev_moy_mensuelle_plus5_std = ("Prevalence_>5ans_avec_FE", "std")
+    )
+    .round(2)
+)
+
+# Ordonner logiquement les saisons
+ordre_saison = ["Forte", "Transition", "Faible"]
+table_par_saison = table_par_saison.reindex(ordre_saison)
+
+table_par_saison
+
+season_colors = {
+    "Forte": "#f4a6a6",       # rouge clair
+    "Transition": "#6baed6",  # bleu moyen
+    "Faible": "#74c476"       # vert moyen
+}
+
+from matplotlib.patches import Patch
+
+def add_season_background_and_legend(ax, df):
+    # Background saisonnier
+    for i in range(len(df) - 1):
+        season = df.iloc[i]["Saison"]
+        start = df.iloc[i]["date"]
+        end = df.iloc[i + 1]["date"]
+
+        ax.axvspan(
+            start, end,
+            color=season_colors.get(season, "white"),
+            alpha=0.35
+        )
+
+    # Légende des saisons
+    season_patches = [
+        Patch(facecolor=color, edgecolor='none', label=season)
+        for season, color in season_colors.items()
+    ]
+
+    return season_patches
+
+fig, ax = plt.subplots(figsize=(13,5))
+
+# Ajout de background + récupéreration de la légende saisons
+season_patches = add_season_background_and_legend(ax, df)
+
+# Courbes stratifiées par âge
+ax.plot(df["date"], df["Cas_confirmés_<5ans"],
+        label="< 5 ans", marker="o")
+ax.plot(df["date"], df["Cas_confirmés_>5ans_avec_FE"],
+        label="≥ 5 ans (incluant FE)", marker="o")
+
+# Lignes verticales fin d’année
+for year in df["Année"].unique():
+    dec_date = df[(df["Année"] == year) & (df["Mois"] == "Décembre")]["date"]
+    if not dec_date.empty:
+        ax.axvline(dec_date.values[0], linestyle="--", alpha=0.8)
+
+# Titres et labels
+ax.set_title("Évolution mensuelle des cas confirmés de paludisme par âge\navec saisons de transmission")
+ax.set_xlabel("Date")
+ax.set_ylabel("Nombre de cas confirmés")
+
+# Légendes
+age_legend = ax.legend(loc="upper left")
+ax.add_artist(age_legend)
+ax.legend(handles=season_patches, title="Saison de transmission", loc="upper right")
+
+ax.grid(True)
+plt.show()
+
+fig, ax = plt.subplots(figsize=(13,5))
+# Background + légende saisons
+season_patches = add_season_background_and_legend(ax, df)
+
+# Courbes de prévalence stratifiées par âge
+ax.plot(df["date"], df["Prevalence_<5ans"],
+        label="< 5 ans", marker="o")
+ax.plot(df["date"], df["Prevalence_>5ans_avec_FE"],
+        label="≥ 5 ans (incluant FE)", marker="o")
+
+# Lignes verticales fin d’année
+for year in df["Année"].unique():
+    dec_date = df[(df["Année"] == year) & (df["Mois"] == "Décembre")]["date"]
+    if not dec_date.empty:
+        ax.axvline(dec_date.values[0], linestyle="--", alpha=0.8)
+
+# Titres et labels
+ax.set_title("Évolution mensuelle de la prévalence du paludisme par âge\navec saisons de transmission")
+ax.set_xlabel("Date")
+ax.set_ylabel("Prévalence (%)")
+
+# Légendes
+age_legend = ax.legend(loc="upper left")
+ax.add_artist(age_legend)
+ax.legend(handles=season_patches, title="Saison de transmission", loc="upper right")
+
+ax.grid(True)
+plt.show()
+
+
+
+
+# ANALYSE GRAPHIQUE CONJOINTE :
+# Météo (pluie, température, humidité) vs
+# Cas confirmés & Prévalence du paludisme
+# avec saisons de transmission (2022–2024)
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+
+
+# 1. Palette des saisons (déjà validée)
+season_colors = {
+    "Forte": "#f4a6a6",       # rouge clair
+    "Transition": "#6baed6",  # bleu moyen
+    "Faible": "#74c476"       # vert moyen
+}
+
+
+# 2. Fonction background saisonnier + légende
+def add_season_background(ax, df):
+    for i in range(len(df) - 1):
+        ax.axvspan(
+            df.iloc[i]["date"],
+            df.iloc[i + 1]["date"],
+            color=season_colors.get(df.iloc[i]["Saison"], "white"),
+            alpha=0.35
+        )
+
+def season_legend():
+    return [
+        Patch(facecolor=color, edgecolor="none", label=season)
+        for season, color in season_colors.items()
+    ]
+
+# 3. Vérification minimale des colonnes nécessaires
+required_cols = [
+    "date", "Saison",
+    "Total_cas confirmés", "Prevalence_total",
+    "Précipitation_mm", "Température", "Humidité_%"]
+
+missing = [c for c in required_cols if c not in df.columns]
+if missing:
+    raise ValueError(f"Colonnes manquantes : {missing}")
+
+
+# 4. GRAPHIQUE 1 : Cas confirmés + Précipitations
+fig, ax1 = plt.subplots(figsize=(14,6))
+
+add_season_background(ax1, df)
+
+ax1.plot(df["date"], df["Total_cas confirmés"],
+         marker="o", label="Cas confirmés")
+ax1.set_ylabel("Nombre de cas confirmés")
+ax1.set_xlabel("Date")
+
+ax2 = ax1.twinx()
+ax2.plot(df["date"], df["Précipitation_mm"],
+         linestyle="--", label="Précipitations (mm)")
+ax2.set_ylabel("Précipitations (mm)")
+
+ax1.set_title("Cas confirmés du paludisme et précipitations\navec saisons de transmission")
+
+# Légendes
+l1, lab1 = ax1.get_legend_handles_labels()
+l2, lab2 = ax2.get_legend_handles_labels()
+ax1.add_artist(ax1.legend(handles=season_legend(),
+                          title="Saison de transmission",
+                          loc="upper left"))
+h1, l1 = ax1.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax1.legend(h1 + h2, l1 + l2, loc="lower center") 
+ax1.grid(True)
+plt.show()
+
+
+# 5. GRAPHIQUE 2 : Prévalence + Température
+
+fig, ax1 = plt.subplots(figsize=(14,6))
+
+add_season_background(ax1, df)
+
+ax1.plot(df["date"], df["Prevalence_total"],
+         marker="o", label="Prévalence totale")
+ax1.set_ylabel("Prévalence (%)")
+ax1.set_xlabel("Date")
+
+ax2 = ax1.twinx()
+ax2.plot(df["date"], df["Température"],
+         linestyle="--", label="Température (°C)")
+ax2.set_ylabel("Température (°C)")
+
+ax1.set_title("Prévalence du paludisme et température\navec saisons de transmission")
+
+l1, lab1 = ax1.get_legend_handles_labels()
+l2, lab2 = ax2.get_legend_handles_labels()
+ax1.add_artist(ax1.legend(handles=season_legend(),
+                          title="Saison de transmission",
+                          loc="lower right"))
+h1, l1 = ax1.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax1.legend(h1 + h2, l1 + l2, loc="upper left")
+ax1.grid(True)
+plt.show()
+
+
+# 6. GRAPHIQUE 3 : Prévalence + Humidité
+fig, ax1 = plt.subplots(figsize=(14,6))
+
+add_season_background(ax1, df)
+
+ax1.plot(df["date"], df["Prevalence_total"],
+         marker="o", label="Prévalence totale")
+ax1.set_ylabel("Prévalence (%)")
+ax1.set_xlabel("Date")
+
+ax2 = ax1.twinx()
+ax2.plot(df["date"], df["Humidité_%"] ,
+         linestyle="--", label="Humidité (%)")
+ax2.set_ylabel("Humidité (%)")
+
+ax1.set_title("Prévalence du paludisme et humidité relative\navec saisons de transmission")
+
+l1, lab1 = ax1.get_legend_handles_labels()
+l2, lab2 = ax2.get_legend_handles_labels()
+ax1.add_artist(ax1.legend(handles=season_legend(),
+                          title="Saison de transmission",
+                          loc="lower center"))
+h1, l1 = ax1.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax1.legend(h1 + h2, l1 + l2, loc="upper left")
+ax1.grid(True)
+plt.show()
+
+
+
+# 6. GRAPHIQUE 4: Prévalence + precipitations
+fig, ax1 = plt.subplots(figsize=(14,6))
+
+add_season_background(ax1, df)
+
+ax1.plot(df["date"], df["Prevalence_total"],
+         marker="o", label="Prévalence totale")
+ax1.set_ylabel("Prévalence (%)")
+ax1.set_xlabel("Date")
+
+ax2 = ax1.twinx()
+ax2.plot(df["date"], df["Précipitation_mm"],
+         linestyle="--", label="Précipitations (mm)")
+ax2.set_ylabel("Précipitations (mm)")
+
+ax1.set_title("Prévalence du paludisme et précipitations\n(selon les saisons de transmission)")
+
+l1, lab1 = ax1.get_legend_handles_labels()
+l2, lab2 = ax2.get_legend_handles_labels()
+ax1.add_artist(ax1.legend(handles=season_legend(),
+                          title="Saison de transmission",
+                          loc="lower center"))
+h1, l1 = ax1.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax1.legend(h1 + h2, l1 + l2, loc="upper left")
+ax1.grid(True)
+plt.show()
+
+
+# 4. GRAPHIQUE 5 : Cas confirmés + humidites
+fig, ax1 = plt.subplots(figsize=(14,6))
+
+add_season_background(ax1, df)
+
+ax1.plot(df["date"], df["Total_cas confirmés"],
+         marker="o", label="Cas confirmés")
+ax1.set_ylabel("Nombre de cas confirmés")
+ax1.set_xlabel("Date")
+
+ax2 = ax1.twinx()
+ax2.plot(df["date"], df["Humidité_%"] ,
+         linestyle="--", label="Humidité (%)")
+ax2.set_ylabel("Humidité (%))")
+
+ax1.set_title("Cas confirmés du paludisme et humidité relative\n(selon les saisons de transmission)")
+
+l1, lab1 = ax1.get_legend_handles_labels()
+l2, lab2 = ax2.get_legend_handles_labels()
+ax1.add_artist(ax1.legend(handles=season_legend(),
+                          title="Saison de transmission",
+                          loc="lower center"))
+h1, l1 = ax1.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax1.legend(h1 + h2, l1 + l2, loc="upper left")
+ax1.grid(True)
+plt.show()
+
+
+# 4. GRAPHIQUE 6 : Cas confirmés + temperature
+
+fig, ax1 = plt.subplots(figsize=(14,6))
+add_season_background(ax1, df)
+
+ax1.plot(df["date"], df["Total_cas confirmés"],
+         marker="o", label="Cas confirmés")
+ax1.set_ylabel("Nombre de cas confirmés")
+ax1.set_xlabel("Date")
+
+ax2 = ax1.twinx()
+ax2.plot(df["date"], df["Température"],
+         linestyle="--", label="Température (°C)")
+ax2.set_ylabel("Température (°C)")
+
+ax1.set_title("Cas confirmés du paludisme et température\n(selon les saisons de transmission)")
+
+l1, lab1 = ax1.get_legend_handles_labels()
+l2, lab2 = ax2.get_legend_handles_labels()
+ax1.add_artist(ax1.legend(handles=season_legend(),
+                          title="Saison de transmission",
+                          loc="upper right"))
+handles, labels = ax1.get_legend_handles_labels()
+ax1.legend(handles, labels, loc="upper left")
+h1, l1 = ax1.get_legend_handles_labels()
+h2, l2 = ax2.get_legend_handles_labels()
+ax1.legend(h1 + h2, l1 + l2, loc="upper left")
+ax1.grid(True)
+plt.show()
+
+# Two anova test for association
+df["Saison"] = df["Saison"].astype("category")
+df["Année"] = df["Année"].astype("category")
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+from scipy.stats import shapiro, levene
+from patsy import dmatrix
+
+def two_way_anova_prevalence(df, outcome):
+
+    print(f"\n===== TWO-WAY ANOVA POUR : {outcome} =====")
+
+    # Modèle linéaire
+    formula = f"Q('{outcome}') ~ C(Saison) * C(Année)"
+    model = ols(
+        formula,
+        data=df
+    ).fit()
+
+    # Table ANOVA (Type II)
+    anova_table = sm.stats.anova_lm(model, typ=2)
+    print("\n--- Table ANOVA ---")
+    print(anova_table)
+
+    # Tests d’hypothèses
+    print("\n--- Vérification des hypothèses ---")
+
+    # Normalité des résidus
+    shapiro_p = shapiro(model.resid)[1]
+    print(f"Shapiro-Wilk (résidus) p-value = {shapiro_p:.4f}")
+
+    # Homogénéité des variances
+    groups = [
+        group[outcome].values
+        for _, group in df.groupby(["Saison", "Année"])
+    ]
+    levene_p = levene(*groups)[1]
+    print(f"Levene (variances) p-value = {levene_p:.4f}")
+
+    return model, anova_table
+model_total, anova_total = two_way_anova_prevalence(
+    df, "Prevalence_total"
+)
+model_u5, anova_u5 = two_way_anova_prevalence(
+    df, "Prevalence_<5ans"
+)
+model_o5, anova_o5 = two_way_anova_prevalence(
+    df, "Prevalence_>5ans_avec_FE"
+)
+
+
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+
+
+# Fonction Tukey post-hoc pour la saison
+def tukey_season(df, outcome):
+    print(f"\n===== TUKEY POST-HOC (SAISON) POUR : {outcome} =====")
+
+    tukey = pairwise_tukeyhsd(
+        endog=df[outcome],
+        groups=df["Saison"],
+        alpha=0.05
+    )
+
+    print(tukey)
+    return tukey
+
+
+# 1. Prévalence totale
+tukey_total = tukey_season(df, "Prevalence_total")
+
+# 2. Prévalence < 5 ans
+tukey_u5 = tukey_season(df, "Prevalence_<5ans")
+
+# 3. Prévalence ≥ 5 ans (incluant FE)
+tukey_o5 = tukey_season(df, "Prevalence_>5ans_avec_FE")
+
+
+# spearman correlation
+from scipy.stats import spearmanr
+
+# 1. Restreindre à la saison de faible transmission
+df_faible = df[df["Saison"] == "Faible"].copy()
+
+# Vérification taille échantillon
+print("Nombre d'observations (saison faible) :", df_faible.shape[0])
+
+
+# 2. Fonction de corrélation Spearman (avec lag)
+def spearman_corr(df, x, y, lag=0):
+    """
+    x = variable météo
+    y = cas de paludisme
+    lag = décalage temporel (en mois)
+    """
+    if lag > 0:
+        df = df.copy()
+        df[x] = df[x].shift(lag)
+        df = df.dropna()
+
+    rho, p = spearmanr(df[x], df[y])
+    return rho, p
+
+
+# 3. Variables
+meteo_vars = ["Température", "Humidité_%", "Précipitation_mm"]
+outcome = "Total_cas confirmés"
+
+# 4. Corrélations sans lag
+print("\n--- Corrélations Spearman (sans lag) ---")
+for var in meteo_vars:
+    rho, p = spearman_corr(df_faible, var, outcome, lag=0)
+    print(f"{var} : rho = {rho:.3f}, p-value = {p:.4f}")
+
+# 5. Corrélations avec lag 1 mois
+print("\n--- Corrélations Spearman (lag 1 mois) ---")
+for var in meteo_vars:
+    rho, p = spearman_corr(df_faible, var, outcome, lag=1)
+    print(f"{var} (lag 1) : rho = {rho:.3f}, p-value = {p:.4f}")
+
+
+# 6. (Optionnel) lag 2 mois
+print("\n--- Corrélations Spearman (lag 2 mois) ---")
+for var in meteo_vars:
+    rho, p = spearman_corr(df_faible, var, outcome, lag=2)
+    print(f"{var} (lag 2) : rho = {rho:.3f}, p-value = {p:.4f}")
+
+
+
+
+# POISSON REGRESSION AJUSTÉE :
+# Cas de paludisme ~ Année + facteurs météorologiques
+# (Saison de FAIBLE transmission uniquement)
+
+# 1. Restreindre aux mois de saison faible
+df_faible = df[df["Saison"] == "Faible"].copy()
+
+# 2. S'assurer que l'année est traitée comme facteur
+df_faible["Année"] = df_faible["Année"].astype("category")
+
+# 3. Modèle de Poisson ajusté sur la météo
+from statsmodels.formula.api import glm
+import statsmodels.api as sm
+
+poisson_meteo_model = glm(
+    formula=(
+        "Q('Total_cas confirmés') ~ C(Année) + "
+        "Q('Précipitation_mm') + Q('Température') + Q('Humidité_%')"
+    ),
+    data=df_faible,
+    family=sm.families.Poisson()
+).fit()
+
+# 4. Résumé du modèle
+print(poisson_meteo_model.summary())
+
+# 5. Extraction des Rate Ratios (RR) et IC95 %
+params = poisson_meteo_model.params
+conf = poisson_meteo_model.conf_int()
+
+rr = params.apply(lambda x: np.exp(x))
+conf_rr = conf.apply(lambda x: np.exp(x))
+
+rr_table = pd.DataFrame({
+    "Rate_Ratio": rr,
+    "IC95_inf": conf_rr[0],
+    "IC95_sup": conf_rr[1],
+    "p_value": poisson_meteo_model.pvalues
+})
+
+print("\n--- Rate Ratios ajustés (référence = 2022, saison faible) ---")
+print(rr_table)
+
+
+
+# TEST DE SURDISPERSION + NÉGATIVE BINOMIALE
+# (Saison FAIBLE, cas confirmés ajustés météo)
+
+
+# 1. TEST DE SURDISPERSION (Poisson)
+# Règle : dispersion = Pearson Chi2 / ddl
+pearson_chi2 = poisson_meteo_model.pearson_chi2
+df_resid = poisson_meteo_model.df_resid
+dispersion_ratio = pearson_chi2 / df_resid
+
+print("\n=== TEST DE SURDISPERSION ===")
+print(f"Pearson Chi² = {pearson_chi2:.2f}")
+print(f"Degrés de liberté = {df_resid}")
+print(f"Ratio de dispersion = {dispersion_ratio:.2f}")
+
+if dispersion_ratio > 1.5:
+    print("⚠️ Surdispersion présente → Négative Binomiale recommandée")
+else:
+    print("✔ Pas de surdispersion majeure → Poisson acceptable")
+
+# 2. MODÈLE NÉGATIVE BINOMIALE
+from statsmodels.formula.api import glm
+import statsmodels.api as sm
+
+nb_model = glm(
+    formula=(
+        "Q('Total_cas confirmés') ~ C(Année) + "
+        "Q('Précipitation_mm') + Q('Température') + Q('Humidité_%')"
+    ),
+    data=df_faible,
+    family=sm.families.NegativeBinomial()
+).fit()
+
+print("\n=== RÉSUMÉ DU MODÈLE NÉGATIVE BINOMIALE ===")
+print(nb_model.summary())
+
+# 3. EXTRACTION DES RATE RATIOS (RR) + IC95 %
+params_nb = nb_model.params
+conf_nb = nb_model.conf_int()
+
+rr_nb = params_nb.apply(lambda x: np.exp(x))
+conf_rr_nb = conf_nb.apply(lambda x: np.exp(x))
+
+rr_nb_table = pd.DataFrame({
+    "Rate_Ratio": rr_nb,
+    "IC95_inf": conf_rr_nb[0],
+    "IC95_sup": conf_rr_nb[1],
+    "p_value": nb_model.pvalues
+})
+
+print("\n--- Rate Ratios (Négative Binomiale) ---")
+print(rr_nb_table)
