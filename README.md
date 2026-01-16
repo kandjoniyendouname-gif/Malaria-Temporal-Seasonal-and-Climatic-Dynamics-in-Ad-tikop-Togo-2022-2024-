@@ -51,12 +51,19 @@ Clean_data_for_M._ATTISSO 06 01 2026.xls
 It includes:
 
 •	Monthly malaria indicators (suspected cases, confirmed cases, prevalence)
+
 •	Age stratification (<5 years and ≥5 years, including pregnant women)
+
 •	Transmission season classification
+
 •	Meteorological variables:
+
 o	Rainfall (mm)
+
 o	Mean temperature (°C)
+
 o	Relative humidity (%)
+
 ⚠️ Data are not publicly shared due to confidentiality and ethical considerations.
 
 Analytical Workflow
@@ -69,18 +76,31 @@ The code implements:
 6.	Climate–malaria association analyses (Spearman correlations with lags)
 7.	Poisson regression with meteorological adjustment
 8.	Overdispersion testing and Negative Binomial regression
+
 All figures are generated in publication-ready format.
+
 Tools and Libraries
+
 Analyses were conducted using Python (Google Colab compatible):
+
 •	pandas
+
 •	numpy
+
 •	matplotlib
+
 •	seaborn
+
 •	statsmodels
+
 •	scipy
+
 Initial data cleaning was performed using SPSS 27.
+
 Outputs
+
 The repository produces:
+
 •	High-resolution figures (PNG, 300 dpi)
 •	Descriptive summary tables
 •	ANOVA and post-hoc outputs
@@ -94,10 +114,16 @@ This repository is intended for:
 •	Training in applied biostatistics and epidemiology
 
 Citation
+
 If this repository or code is reused, please cite the thesis author:
 ATTISSO, KANDJONI Y. (2026). Temporal, seasonal and climatic dynamics of malaria transmission in Adétikopé, Togo (2022–2024). Master’s thesis, One health
+
 Contact
+
 For scientific questions related to the study:
+
 •	Thesis author: ATTISSO, Master of Science in One Health, University of Lomé, Togo.
+
 For technical questions related to the code:
+
 •	Code contributor: KANDJONI Yendouname, Master of Science in Biostatistics, SRM Institute of Science and Technology (SRM IST), India.
