@@ -1,5 +1,7 @@
 Malaria Temporal, Seasonal and Climatic Dynamics in Adétikopé, Togo (2022-2024)
+
 Project Overview
+
 This repository contains the full analytical workflow used to describe the temporal, seasonal, climatic, and entomological dynamics of malaria transmission in Adétikopé (Togo) between 2022 and 2024.
 The project was conducted as part of a Master’s thesis in One Haealth.
 All analyses were implemented in Python based on sentinel surveillance, meteorological, and entomological data.
