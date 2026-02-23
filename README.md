@@ -64,7 +64,7 @@ o	Mean temperature (°C)
 
 o	Relative humidity (%)
 
-⚠️ Data are not publicly shared due to confidentiality and ethical considerations.
+Data are not publicly shared due to confidentiality and ethical considerations.
 
 Analytical Workflow
 The code implements:
