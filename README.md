@@ -1,13 +1,13 @@
-Malaria Temporal, Seasonal and Climatic Dynamics in Adétikopé, Togo (2022-2024)
+# Malaria Temporal, Seasonal and Climatic Dynamics in Adétikopé, Togo (2022-2024)
 
-Project Overview
+## Project Overview
 
 This repository contains the full analytical workflow used to describe the temporal, seasonal, climatic, and entomological dynamics of malaria transmission in Adétikopé (Togo) between 2022 and 2024.
 
 The project was conducted as part of a Master’s thesis in One Haealth.
 All analyses were implemented in Python based on sentinel surveillance, meteorological, and entomological data.
 
-Academic Context
+## Academic Context
 
 •	Project owner & thesis author: ATTISSO
 
@@ -19,17 +19,17 @@ Academic Context
 
 •	Study area: Adétikopé, Togo
 
-This repository serves as the computational and analytical support for the thesis.
+### This repository serves as the computational and analytical support for the thesis.
 
-Contributions
+### Contributions
 
 •	Protocol conception, data analysis, statistical modeling, visualization, scientific interpretation: Conducted by the repository contributor (code author)
 
 •	Conceptualization, data ownership, and scientific interpretation: ATTISSO
 
-This repository reflects a collaborative academic work, with a clear distinction between scientific ownership and technical implementation.
+### This repository reflects a collaborative academic work, with a clear distinction between scientific ownership and technical implementation.
 
-Objectives
+### Objectives
 
 The main objectives of this project are to:
 
@@ -66,7 +66,7 @@ o	Relative humidity (%)
 
 Data are not publicly shared due to confidentiality and ethical considerations.
 
-Analytical Workflow
+## Analytical Workflow
 The code implements:
 1.	Data import, cleaning, and time variable construction
 2.	Descriptive statistics and summary tables (by year, season, age group)
@@ -79,7 +79,7 @@ The code implements:
 
 All figures are generated in publication-ready format.
 
-Tools and Libraries
+## Tools and Libraries
 
 Analyses were conducted using Python (Google Colab compatible):
 
@@ -97,7 +97,7 @@ Analyses were conducted using Python (Google Colab compatible):
 
 Initial data cleaning was performed using SPSS 27.
 
-Outputs
+## Outputs
 
 The repository produces:
 
@@ -106,19 +106,19 @@ The repository produces:
 •	ANOVA and post-hoc outputs
 •	Regression model summaries with rate ratios and 95% confidence intervals
 
-Intended Use
+## Intended Use
 This repository is intended for:
 •	Academic evaluation (Master’s thesis)
 •	Epidemiological surveillance research
 •	Reproducible public health analysis
 •	Training in applied biostatistics and epidemiology
 
-Citation
+## Citation
 
 If this repository or code is reused, please cite the thesis author:
 ATTISSO, KANDJONI Y. (2026). Temporal, seasonal and climatic dynamics of malaria transmission in Adétikopé, Togo (2022–2024). Master’s thesis, One health
 
-Contact
+## Contact
 
 For scientific questions related to the study:
 
